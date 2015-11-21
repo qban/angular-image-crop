@@ -1,5 +1,8 @@
+
 Angular Image Crop
 ==================
+
+Version adopted by qban
 
 I'm attempting to make a self-contained AngularJS Directive which will allow you to crop an image before it's uploaded to the server.
 
