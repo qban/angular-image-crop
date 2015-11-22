@@ -1186,15 +1186,28 @@
 			scope.result = dataUrl;
 						scope.resultBlob = dataURItoBlob(dataUrl);
 						
+
+						console.log("CROPPED IMAGE TRY 2:" + JSON.stringify(dataUrl));
+
+
+						scope.croppedFn({
+							croppedImageDataUri: scope.result,
+							croppedImageBlob: scope.resultBlob
+						});
+
+
 						scope.$apply();
 					};
 
 					scope.doCrop = function() {
 						scope.croppedDataUri = $canvas.toDataURL();
+						console.log("CROPPED IMAGE:" + JSON.stringify($canvas.toDataURL()));
+/*
 						scope.croppedFn({
 							croppedImageDataUri: scope.croppedDataUri,
 							croppedImageBlob: dataURItoBlob(scope.croppedDataUri)
 						});
+*/						
 						scope.step = 3;
 					};
 
