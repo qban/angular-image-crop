@@ -1181,34 +1181,24 @@
 
 						$elm.getElementsByClassName('image-crop-section-final')[0].appendChild(tempCanvas);
 			
-			var dataUrl = tempCanvas.toDataURL();
+						var dataUrl = tempCanvas.toDataURL();
 			
-			scope.result = dataUrl;
+						scope.result = dataUrl;
 						scope.resultBlob = dataURItoBlob(dataUrl);
 						
-
-						console.log("CROPPED IMAGE TRY 2:" + JSON.stringify(dataUrl));
-
-
 						scope.croppedFn({
 							croppedImageDataUri: scope.result,
 							croppedImageBlob: scope.resultBlob
 						});
 
-
+						// TODO: check why step is needed here and not in doCrop
+						scope.step = 3;
 						scope.$apply();
 					};
 
 					scope.doCrop = function() {
 						scope.croppedDataUri = $canvas.toDataURL();
 						console.log("CROPPED IMAGE:" + JSON.stringify($canvas.toDataURL()));
-/*
-						scope.croppedFn({
-							croppedImageDataUri: scope.croppedDataUri,
-							croppedImageBlob: dataURItoBlob(scope.croppedDataUri)
-						});
-*/						
-						scope.step = 3;
 					};
 
 					scope.onCanvasMouseUp = function(e) {
