@@ -759,7 +759,7 @@
 		.directive('imageCrop', function() {
 
 			return {
-				template: '<div id="image-crop-{{ rand }}" class="ng-image-crop ng-image-crop--{{ shape }}" ng-style="moduleStyles"><section ng-style="sectionStyles" ng-show="step==1"></section><section ng-style="sectionStyles" ng-show="step==2"><canvas class="cropping-canvas" width="{{ canvasWidth }}" height="{{ canvasHeight }}" ng-mousemove="onCanvasMouseMove($event)" ng-mousedown="onCanvasMouseDown($event)"></canvas><div ng-style="croppingGuideStyles" class="cropping-guide"></div><div class="zoom-handle" ng-mousemove="onHandleMouseMove($event)" ng-mousedown="onHandleMouseDown($event)" ng-mouseup="onHandleMouseUp($event)"><span>&larr; zoom &rarr;</span></div></section><section ng-style="sectionStyles" class="image-crop-section-final" ng-show="step==3"><img class="image-crop-final" ng-src="{{ croppedDataUri }}" /></section></div>',
+				template: '<div id="image-crop-{{ rand }}" class="ng-image-crop ng-image-crop--{{ shape }}" ng-style="moduleStyles"><section ng-style="sectionStyles" ng-show="step==1"></section><section ng-style="sectionStyles" ng-show="step==2"><canvas class="cropping-canvas" width="{{ canvasWidth }}" height="{{ canvasHeight }}" ng-mousemove="onCanvasMouseMove($event)" ng-mousedown="onCanvasMouseDown($event)"></canvas><div ng-style="croppingGuideStyles" class="cropping-guide"></div></section><section ng-style="sectionStyles" class="image-crop-section-final" ng-show="step==3"><img class="image-crop-final" ng-src="{{ croppedDataUri }}" /></section></div>',
 				replace: true,
 				restrict: 'AE',
 				scope: {
@@ -791,7 +791,7 @@
 					var $elm = element[0];
 
 					var $canvas = $elm.getElementsByClassName('cropping-canvas')[0];
-					var $handle = $elm.getElementsByClassName('zoom-handle')[0];
+					//var $handle = $elm.getElementsByClassName('zoom-handle')[0];
 					var $finalImg = $elm.getElementsByClassName('image-crop-final')[0];
 					var $img = new Image();
 					var fileReader = new FileReader();
@@ -1261,7 +1261,7 @@
 			
 					};
 
-					$handle.addEventListener('touchstart', scope.onHandleMouseDown, false);
+					//$handle.addEventListener('touchstart', scope.onHandleMouseDown, false);
 
 					scope.onHandleMouseUp = function(e) {
 
@@ -1285,7 +1285,7 @@
 						removeBodyEventListener('touchmove', scope.onHandleMouseMove);
 					};
 
-					$handle.addEventListener('touchend', scope.onHandleMouseUp, false);
+					//$handle.addEventListener('touchend', scope.onHandleMouseUp, false);
 
 					scope.onCanvasMouseMove = function(e) {
 
@@ -1330,7 +1330,7 @@
 
 					};
 
-					$handle.addEventListener('touchmove', scope.onHandleMouseMove, false);         
+					//$handle.addEventListener('touchmove', scope.onHandleMouseMove, false);         
 								
 			scope.onHandleMouseWheel = function(e){
 				e.preventDefault();     
@@ -1339,7 +1339,7 @@
 			};
 
 			$canvas.addEventListener('mousewheel', scope.onHandleMouseWheel);
-			$handle.addEventListener('mousewheel', scope.onHandleMouseWheel);
+			//$handle.addEventListener('mousewheel', scope.onHandleMouseWheel);
 
 			scope.$on("zoomImage", function (event, args) {
 								console.log ("ZOOOMIMAGE:" + JSON.stringify(args));
