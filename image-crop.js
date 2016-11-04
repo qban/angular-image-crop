@@ -1,8 +1,4 @@
 /**
- *
- * Modified Version of AngularJS Directive - Image Crop / Based on work from Andy Shora
- * https://github.com/andyshora/angular-image-crop
- *
  * AngularJS Directive - Image Crop v1.1.0
  * Copyright (c) 2014 Andy Shora, andyshora@gmail.com, andyshora.com
  * Licensed under the MPL License [http://www.nihilogic.dk/licenses/mpl-license.txt]
@@ -445,6 +441,8 @@
 
 					while (offset < length) {
 							if (file.getByteAt(offset) != 0xFF) {
+									if (debug)
+											//console.log("Not a valid marker at offset " + offset + ", found: " + file.getByteAt(offset));
 									return false; // not a valid marker, something is wrong
 							}
 
@@ -454,9 +452,18 @@
 							// but we're only looking for 0xFFE1 for EXIF data
 
 							if (marker == 22400) {
+									if (debug)
+											console.log("Found 0xFFE1 marker");
+
 									return readEXIFData(file, offset + 4, file.getShortAt(offset + 2, true) - 2);
+
+									// offset += 2 + file.getShortAt(offset+2, true);
+
 							} else if (marker == 225) {
 									// 0xE1 = Application-specific 1 (for EXIF)
+									if (debug)
+											console.log("Found 0xFFE1 marker");
+
 									return readEXIFData(file, offset + 4, file.getShortAt(offset + 2, true) - 2);
 
 							} else {
@@ -477,6 +484,8 @@
 					for (i = 0; i < entries; i++) {
 							entryOffset = dirStart + i * 12 + 2;
 							tag = strings[file.getShortAt(entryOffset, bigEnd)];
+							if (!tag && debug)
+									console.log("Unknown tag: " + file.getShortAt(entryOffset, bigEnd));
 							tags[tag] = readTagValue(file, entryOffset, tiffStart, dirStart, bigEnd);
 					}
 					return tags;
@@ -579,6 +588,8 @@
 
 			function readEXIFData(file, start) {
 					if (file.getStringAt(start, 4) != "Exif") {
+							if (debug)
+									console.log("Not valid EXIF data! " + file.getStringAt(start, 4));
 							return false;
 					}
 
@@ -593,14 +604,20 @@
 					} else if (file.getShortAt(tiffOffset) == 0x4D4D) {
 							bigEnd = true;
 					} else {
+							if (debug)
+									console.log("Not valid TIFF data! (no 0x4949 or 0x4D4D)");
 							return false;
 					}
 
 					if (file.getShortAt(tiffOffset + 2, bigEnd) != 0x002A) {
+							if (debug)
+									console.log("Not valid TIFF data! (no 0x002A)");
 							return false;
 					}
 
 					if (file.getLongAt(tiffOffset + 4, bigEnd) != 0x00000008) {
+							if (debug)
+									console.log("Not valid TIFF data! (First offset not 8)", file.getShortAt(tiffOffset + 4, bigEnd));
 							return false;
 					}
 
@@ -761,6 +778,9 @@
 				link: function (scope, element, attributes) {
 			
 			var padding = scope.padding ? Number(scope.padding) : 200;
+			
+					console.warn('directive imagecrop padding:' + padding);
+
 					scope.rand = Math.round(Math.random() * 99999);
 					scope.step = scope.step || 1;
 					scope.shape = scope.shape || 'circle';
@@ -773,6 +793,7 @@
 					var $elm = element[0];
 
 					var $canvas = $elm.getElementsByClassName('cropping-canvas')[0];
+					//var $handle = $elm.getElementsByClassName('zoom-handle')[0];
 					var $finalImg = $elm.getElementsByClassName('image-crop-final')[0];
 					var $img = new Image();
 					var fileReader = new FileReader();
@@ -976,7 +997,9 @@
 			
 					// ---------- EVENT HANDLERS ---------- //
 					fileReader.onload = function(e) {
+						
 						loadImage(this.resultBlob); 
+
 					};    
 
 					$img.onload = function() {
@@ -1022,11 +1045,24 @@
 
 					// ---------- PRIVATE FUNCTIONS ---------- //
 					function moveImage(x, y) {
+			/*
+			x = x < minXPos ? minXPos : x;
+			x = x > maxXPos ? maxXPos : x;
+			y = y < minYPos ? minYPos : y;
+			y = y > maxYPos ? maxYPos : y;      
+*/
+
+					
+					//console.log('moveImage x:' + x + ' y:' + y  );
+
+
 						targetX = x;
 						targetY = y;
+			
 						ctx.clearRect(0, 0, $canvas.width, $canvas.height);
 						ctx.drawImage($img, x, y, newWidth, newHeight);
-						return x == minXPos || x == maxXPos || y == minYPos || y == maxYPos;
+			
+			return x == minXPos || x == maxXPos || y == minYPos || y == maxYPos;
 					}
 
 					function to2Dp(val) {
@@ -1035,17 +1071,23 @@
 
 					function updateDragBounds() {
 						// $img.width, $canvas.width, zoom
+
 						minXPos = $canvas.width - ($img.width * zoom) - (padding/2);
 						minYPos = $canvas.height - ($img.height * zoom) - (padding/2);
+
 					}
 
 					function zoomImage(val, force) {
 
 						if ((typeof force === 'undefined') && (!val)) {
+						//if (!val) {
 							return;
 						}
 			
 						var proposedZoomLevel = to2Dp(zoom + val);
+			
+						//console.log('proposedZoomLevel:' + proposedZoomLevel);
+						//console.log('maxZoomedInLevel:' + maxZoomedInLevel);
 						if ((proposedZoomLevel < maxZoomedInLevel) || (proposedZoomLevel > maxZoomedOutLevel)) {
 							// image wont fill whole canvas
 							// or image is too far zoomed in, it's gonna get pretty pixelated!
@@ -1141,6 +1183,7 @@
 
 					scope.doCrop = function() {
 						scope.croppedDataUri = $canvas.toDataURL();
+						//console.log("CROPPED IMAGE:" + JSON.stringify($canvas.toDataURL()));
 					};
 
 					scope.onCanvasMouseUp = function(e) {
@@ -1173,6 +1216,9 @@
 						zooming = false;
 						dragging = true;
 
+						//console.log('mousedown currentX:' + currentX + ' currentY:' + currentY);
+
+
 						addBodyEventListener('mouseup', scope.onCanvasMouseUp);
 						addBodyEventListener('mousemove', scope.onCanvasMouseMove);
 					};
@@ -1199,12 +1245,12 @@
 
 						addBodyEventListener('mouseup', scope.onHandleMouseUp);
 						addBodyEventListener('touchend', scope.onHandleMouseUp);
-						addBodyEventListener('mousemove', scope.onHandleMouseMove);
-						addBodyEventListener('touchmove', scope.onHandleMouseMove);
+						//addBodyEventListener('mousemove', scope.onHandleMouseMove);
+						//addBodyEventListener('touchmove', scope.onHandleMouseMove);
 			
 					};
 
-					$handle.addEventListener('touchstart', scope.onHandleMouseDown, false);
+					//$handle.addEventListener('touchstart', scope.onHandleMouseDown, false);
 
 					scope.onHandleMouseUp = function(e) {
 
@@ -1224,11 +1270,11 @@
 
 						removeBodyEventListener('mouseup', scope.onHandleMouseUp);
 						removeBodyEventListener('touchend', scope.onHandleMouseUp);
-						removeBodyEventListener('mousemove', scope.onHandleMouseMove);
-						removeBodyEventListener('touchmove', scope.onHandleMouseMove);
+						//removeBodyEventListener('mousemove', scope.onHandleMouseMove);
+						//removeBodyEventListener('touchmove', scope.onHandleMouseMove);
 					};
 
-					$handle.addEventListener('touchend', scope.onHandleMouseUp, false);
+					//$handle.addEventListener('touchend', scope.onHandleMouseUp, false);
 
 					scope.onCanvasMouseMove = function(e) {
 
@@ -1273,19 +1319,27 @@
 						zoomImage(zoomVal);
 
 					};
+
 								
-					scope.onHandleMouseWheel = function(e){
-						e.preventDefault();     						
-						zoomImage(e.deltaY > 0 ? -0.001 : 0.001);       
-					};
+			scope.onHandleMouseWheel = function(e){
+				e.preventDefault();     
+				
+				zoomImage(e.deltaY > 0 ? -0.001 : 0.001);       
+			};
 
-					$canvas.addEventListener('mousewheel', scope.onHandleMouseWheel);
+			$canvas.addEventListener('mousewheel', scope.onHandleMouseWheel);
 
-					scope.$on("zoomImage", function (event, args) {
-						zoomImage(args);
-						currentX = targetX;
-						currentY = targetY;
-					});
+			scope.$on("zoomImage", function (event, args) {
+								//console.log ("ZOOOMIMAGE:" + JSON.stringify(args));
+								zoomImage(args);
+								//console.log ("ZOOOMIMAGE done");
+
+								currentX = targetX;
+								currentY = targetY;
+								//console.log('currentX:' + currentX + ' currentY:' + currentY);
+
+						});
+
 
 				}
 			};
