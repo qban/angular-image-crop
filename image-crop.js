@@ -1,4 +1,8 @@
 /**
+ *
+ * Modified Version of AngularJS Directive - Image Crop / Based on work from Andy Shora
+ * https://github.com/andyshora/angular-image-crop
+ *
  * AngularJS Directive - Image Crop v1.1.0
  * Copyright (c) 2014 Andy Shora, andyshora@gmail.com, andyshora.com
  * Licensed under the MPL License [http://www.nihilogic.dk/licenses/mpl-license.txt]
@@ -441,8 +445,6 @@
 
 					while (offset < length) {
 							if (file.getByteAt(offset) != 0xFF) {
-									if (debug)
-											console.log("Not a valid marker at offset " + offset + ", found: " + file.getByteAt(offset));
 									return false; // not a valid marker, something is wrong
 							}
 
@@ -452,18 +454,9 @@
 							// but we're only looking for 0xFFE1 for EXIF data
 
 							if (marker == 22400) {
-									if (debug)
-											console.log("Found 0xFFE1 marker");
-
 									return readEXIFData(file, offset + 4, file.getShortAt(offset + 2, true) - 2);
-
-									// offset += 2 + file.getShortAt(offset+2, true);
-
 							} else if (marker == 225) {
 									// 0xE1 = Application-specific 1 (for EXIF)
-									if (debug)
-											console.log("Found 0xFFE1 marker");
-
 									return readEXIFData(file, offset + 4, file.getShortAt(offset + 2, true) - 2);
 
 							} else {
@@ -484,8 +477,6 @@
 					for (i = 0; i < entries; i++) {
 							entryOffset = dirStart + i * 12 + 2;
 							tag = strings[file.getShortAt(entryOffset, bigEnd)];
-							if (!tag && debug)
-									console.log("Unknown tag: " + file.getShortAt(entryOffset, bigEnd));
 							tags[tag] = readTagValue(file, entryOffset, tiffStart, dirStart, bigEnd);
 					}
 					return tags;
@@ -588,8 +579,6 @@
 
 			function readEXIFData(file, start) {
 					if (file.getStringAt(start, 4) != "Exif") {
-							if (debug)
-									console.log("Not valid EXIF data! " + file.getStringAt(start, 4));
 							return false;
 					}
 
@@ -604,20 +593,14 @@
 					} else if (file.getShortAt(tiffOffset) == 0x4D4D) {
 							bigEnd = true;
 					} else {
-							if (debug)
-									console.log("Not valid TIFF data! (no 0x4949 or 0x4D4D)");
 							return false;
 					}
 
 					if (file.getShortAt(tiffOffset + 2, bigEnd) != 0x002A) {
-							if (debug)
-									console.log("Not valid TIFF data! (no 0x002A)");
 							return false;
 					}
 
 					if (file.getLongAt(tiffOffset + 4, bigEnd) != 0x00000008) {
-							if (debug)
-									console.log("Not valid TIFF data! (First offset not 8)", file.getShortAt(tiffOffset + 4, bigEnd));
 							return false;
 					}
 
@@ -778,7 +761,6 @@
 				link: function (scope, element, attributes) {
 			
 			var padding = scope.padding ? Number(scope.padding) : 200;
-			
 					scope.rand = Math.round(Math.random() * 99999);
 					scope.step = scope.step || 1;
 					scope.shape = scope.shape || 'circle';
@@ -791,7 +773,6 @@
 					var $elm = element[0];
 
 					var $canvas = $elm.getElementsByClassName('cropping-canvas')[0];
-					//var $handle = $elm.getElementsByClassName('zoom-handle')[0];
 					var $finalImg = $elm.getElementsByClassName('image-crop-final')[0];
 					var $img = new Image();
 					var fileReader = new FileReader();
@@ -800,9 +781,9 @@
 					var currentX = 0, currentY = 0, dragging = false, startX = 0, startY = 0, zooming = false;
 					var newWidth = imgWidth, newHeight = imgHeight;
 					var targetX = 0, targetY = 0;
-					var zoom = 1;
+					var zoom = 0.5;
 					var maxZoomGestureLength = 0;
-					var maxZoomedInLevel = 0, maxZoomedOutLevel = 2;
+					var maxZoomedInLevel = 0, maxZoomedOutLevel = 3;
 					var minXPos = 0, maxXPos = (padding/2), minYPos = 0, maxYPos = (padding/2); // for dragging bounds      
 			var maxSize = scope.maxSize ? Number(scope.maxSize) : null; //max size of the image in px
 			
@@ -995,18 +976,13 @@
 			
 					// ---------- EVENT HANDLERS ---------- //
 					fileReader.onload = function(e) {
-						
 						loadImage(this.resultBlob); 
-
 					};    
 
 					$img.onload = function() {
 			
-			scope.step = 2;
-			scope.$apply();     
-			
-						ctx.drawImage($img, 0, 0);
-
+						scope.step = 2;
+						scope.$apply();     
 						imgWidth = $img.width;
 						imgHeight = $img.height;
 
@@ -1015,51 +991,42 @@
 						newWidth = imgWidth;
 						newHeight = imgHeight;
 						
-			if(imgWidth >= imgHeight) {
-				maxZoomedInLevel = ($canvas.height - padding) / imgHeight;
-			} else {
-				maxZoomedInLevel = ($canvas.width - padding) / imgWidth;
-			}   
+						if(imgWidth >= imgHeight) {
+							maxZoomedInLevel = (($canvas.height - padding) / imgHeight) /2;
+						} else {
+							maxZoomedInLevel = (($canvas.width - padding) / imgWidth) / 2;
+						}   
 
 						maxZoomGestureLength = to2Dp(Math.sqrt(Math.pow($canvas.width, 2) + Math.pow($canvas.height, 2)));
 
 						updateDragBounds();
-			
-			var initialX = Math.round((minXPos + maxXPos)/2);
-			var initialY = Math.round((minYPos + maxYPos)/2);
 						
-			moveImage(initialX, initialY);
-			
+						currentX = Math.round((minXPos + maxXPos)/2);
+						currentY = Math.round((minYPos + maxYPos)/2);
+						
+						zoomImage(0,true);
 					};
 			
 					function reset() {
 						files = [];
-						zoom = 1;
-			currentX = 0; 
-			currentY = 0; 
-			dragging = false; 
-			startX = 0; 
-			startY = 0; 
-			zooming = false;
+						zoom = 0.5;
+						currentX = 0; 
+						currentY = 0; 
+						dragging = false; 
+						startX = 0; 
+						startY = 0; 
+						zooming = false;
 						ctx.clearRect(0, 0, $canvas.width, $canvas.height);            
 						$img.src = '';
 					}     
 
 					// ---------- PRIVATE FUNCTIONS ---------- //
 					function moveImage(x, y) {
-			
-			x = x < minXPos ? minXPos : x;
-			x = x > maxXPos ? maxXPos : x;
-			y = y < minYPos ? minYPos : y;
-			y = y > maxYPos ? maxYPos : y;      
-
 						targetX = x;
 						targetY = y;
-			
 						ctx.clearRect(0, 0, $canvas.width, $canvas.height);
 						ctx.drawImage($img, x, y, newWidth, newHeight);
-			
-			return x == minXPos || x == maxXPos || y == minYPos || y == maxYPos;
+						return x == minXPos || x == maxXPos || y == minYPos || y == maxYPos;
 					}
 
 					function to2Dp(val) {
@@ -1068,20 +1035,17 @@
 
 					function updateDragBounds() {
 						// $img.width, $canvas.width, zoom
-
 						minXPos = $canvas.width - ($img.width * zoom) - (padding/2);
 						minYPos = $canvas.height - ($img.height * zoom) - (padding/2);
-
 					}
 
-					function zoomImage(val) {
+					function zoomImage(val, force) {
 
-						if (!val) {
+						if ((typeof force === 'undefined') && (!val)) {
 							return;
 						}
 			
 						var proposedZoomLevel = to2Dp(zoom + val);
-			
 						if ((proposedZoomLevel < maxZoomedInLevel) || (proposedZoomLevel > maxZoomedOutLevel)) {
 							// image wont fill whole canvas
 							// or image is too far zoomed in, it's gonna get pretty pixelated!
@@ -1089,32 +1053,11 @@
 						}
 
 						zoom = proposedZoomLevel;
-						// console.log('zoom', zoom);
-
 						updateDragBounds();
-
 						newWidth = $img.width * zoom;
 						newHeight = $img.height * zoom;
 
-						var newXPos = currentX * zoom;
-						var newYPos = currentY * zoom;
-
-						// check if we've exposed the gutter
-						if (newXPos < minXPos) {
-							newXPos = minXPos;
-						} else if (newXPos > maxXPos) {
-							newXPos = maxXPos;
-						}
-
-						if (newYPos < minYPos) {
-							newYPos = minYPos;
-						} else if (newYPos > maxYPos) {
-							newYPos = maxYPos;
-						}
-
-						// check if image is still going to fit the bounds of the box
-						ctx.clearRect(0, 0, $canvas.width, $canvas.height);
-						ctx.drawImage($img, newXPos, newYPos, newWidth, newHeight);
+						moveImage(currentX, currentY);						
 					}
 
 					function calcZoomLevel(diffX, diffY) {
@@ -1198,7 +1141,6 @@
 
 					scope.doCrop = function() {
 						scope.croppedDataUri = $canvas.toDataURL();
-						console.log("CROPPED IMAGE:" + JSON.stringify($canvas.toDataURL()));
 					};
 
 					scope.onCanvasMouseUp = function(e) {
@@ -1215,6 +1157,7 @@
 						dragging = false;
 						currentX = targetX;
 						currentY = targetY;
+						//console.log('mouseUp x:' + currentX + ' y:' + currentY);
 
 						removeBodyEventListener('mouseup', scope.onCanvasMouseUp);
 						removeBodyEventListener('touchend', scope.onCanvasMouseUp);
@@ -1261,7 +1204,7 @@
 			
 					};
 
-					//$handle.addEventListener('touchstart', scope.onHandleMouseDown, false);
+					$handle.addEventListener('touchstart', scope.onHandleMouseDown, false);
 
 					scope.onHandleMouseUp = function(e) {
 
@@ -1285,7 +1228,7 @@
 						removeBodyEventListener('touchmove', scope.onHandleMouseMove);
 					};
 
-					//$handle.addEventListener('touchend', scope.onHandleMouseUp, false);
+					$handle.addEventListener('touchend', scope.onHandleMouseUp, false);
 
 					scope.onCanvasMouseMove = function(e) {
 
@@ -1298,10 +1241,11 @@
 
 						var diffX = startX - ((e.type === 'touchmove') ? e.changedTouches[0].clientX : e.clientX); // how far mouse has moved in current drag
 						var diffY = startY - ((e.type === 'touchmove') ? e.changedTouches[0].clientY : e.clientY); // how far mouse has moved in current drag
-						/*targetX = currentX - diffX; // desired new X position
-						targetY = currentY - diffY; // desired new X position*/
 
-						moveImage(currentX - diffX, currentY - diffY);
+						targetX = currentX - diffX; // desired new X position
+						targetY = currentY - diffY; // desired new X position
+
+						moveImage(targetX, targetY);
 
 					};
 
@@ -1329,24 +1273,19 @@
 						zoomImage(zoomVal);
 
 					};
-
-					//$handle.addEventListener('touchmove', scope.onHandleMouseMove, false);         
 								
-			scope.onHandleMouseWheel = function(e){
-				e.preventDefault();     
-				
-				zoomImage(e.deltaY > 0 ? -0.005 : 0.005);       
-			};
+					scope.onHandleMouseWheel = function(e){
+						e.preventDefault();     						
+						zoomImage(e.deltaY > 0 ? -0.001 : 0.001);       
+					};
 
-			$canvas.addEventListener('mousewheel', scope.onHandleMouseWheel);
-			//$handle.addEventListener('mousewheel', scope.onHandleMouseWheel);
+					$canvas.addEventListener('mousewheel', scope.onHandleMouseWheel);
 
-			scope.$on("zoomImage", function (event, args) {
-								console.log ("ZOOOMIMAGE:" + JSON.stringify(args));
-								zoomImage(args);
-								//scope.broadcastedText = args;
-						});
-
+					scope.$on("zoomImage", function (event, args) {
+						zoomImage(args);
+						currentX = targetX;
+						currentY = targetY;
+					});
 
 				}
 			};
