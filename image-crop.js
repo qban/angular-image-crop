@@ -897,11 +897,20 @@
 					if(exif.Orientation >= 5) {
 						canvas.width = img.height;
 						canvas.height = img.width;
+						scope.$parent.imageOrigOrientation = 'rotated';
 					} else {
 						canvas.width = img.width;
 						canvas.height = img.height;
+						scope.$parent.imageOrigOrientation = 'normal';
 					}
 					
+					scope.$parent.imageOrigWidth = canvas.width;
+					scope.$parent.imageOrigHeight = canvas.height;
+					console.log('setting scope parent');
+					console.log('imageOrigWidth: ' + scope.$parent.imageOrigWidth);
+					console.log('imageOrigHeight: ' + scope.$parent.imageOrigHeight);
+
+
 					var context = canvas.getContext("2d");
 		
 					// change mobile orientation, if required
@@ -964,20 +973,19 @@
 			
 			function loadImage(base64ImageSrc) {
 			
-			//get the EXIF information from the image
-						var byteString = atob(base64ImageSrc.split(',')[1]);
-						var binary = new BinaryFile(byteString, 0, byteString.length);
-						exif = EXIF.readFromBinaryFile(binary);     
+				//get the EXIF information from the image
+				var byteString = atob(base64ImageSrc.split(',')[1]);
+				var binary = new BinaryFile(byteString, 0, byteString.length);
+				exif = EXIF.readFromBinaryFile(binary);     
 					 
 				//handle image size
-						handleSize(base64ImageSrc).then(function(base64ImageSrc) {
+				handleSize(base64ImageSrc).then(function(base64ImageSrc) {
 			
-				//if the image has EXIF orientation..
-				if (exif && exif.Orientation && exif.Orientation > 1) {     
+				//if the image has EXIF
+				if (exif && exif.Orientation) {     
 					return handleEXIF(base64ImageSrc, exif);
-				} 
-				//otherwise, just return the image without any treatment
-				else {
+				} else {
+					//otherwise, just return the image without any treatment
 					return base64ImageSrc;
 				}
 				
@@ -1005,7 +1013,7 @@
 						imgWidth = $img.width;
 						imgHeight = $img.height;
 
-						console.log('---- onload imgWidth:' + imgWidth + ' imgHeight:'  + imgHeight);
+						// console.log('---- onload imgWidth:' + imgWidth + ' imgHeight:'  + imgHeight);
 
 						minLeft = (scope.width + padding) - this.width;
 						minTop = (scope.height + padding) - this.height;
@@ -1025,10 +1033,10 @@
 						currentX = Math.round((minXPos + maxXPos)/2);
 						currentY = Math.round((minYPos + maxYPos)/2);
 						
-						console.log('---- onload minXPos:' + minXPos + ' maxXPos:'  + maxXPos);
-						console.log('---- onload minYPos:' + minYPos + ' maxYPos:'  + maxYPos);
-						console.log('---- onload currentX:' + currentX + ' currentY:'  + currentY);
-						console.log('---- onload maxZoomedInLevel:' + maxZoomedInLevel);
+						// console.log('---- onload minXPos:' + minXPos + ' maxXPos:'  + maxXPos);
+						// console.log('---- onload minYPos:' + minYPos + ' maxYPos:'  + maxYPos);
+						// console.log('---- onload currentX:' + currentX + ' currentY:'  + currentY);
+						// console.log('---- onload maxZoomedInLevel:' + maxZoomedInLevel);
 						
 						zoomImage(0,true);
 					};
@@ -1189,7 +1197,7 @@
 				scope.$parent.croppedImageWidth = scope.width;
 				scope.$parent.croppedImageHeight = scope.height
 				scope.$parent.croppedImageZoom = zoom;
-				console.warn('calling croppedFn2:' + scope.croppedFn);
+				// console.warn('calling croppedFn2:' + scope.croppedFn);
 				scope.croppedFn();
 
 				// TODO: check why step is needed here and not in doCrop
@@ -1199,7 +1207,7 @@
 
 			scope.doCrop = function() {
 				scope.croppedDataUri = $canvas.toDataURL();
-				console.warn('CROPPED IMAGE');
+				// console.warn('CROPPED IMAGE');
 				scope.step = 3;
 			};
 
